@@ -1,0 +1,3 @@
+--liquibase formatted sql
+-- changeset derkachev:1000000-1
+-- comment: Initial creation of table users
