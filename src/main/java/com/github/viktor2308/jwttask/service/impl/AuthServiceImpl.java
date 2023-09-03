@@ -23,24 +23,36 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public Optional<JwtResponse> login(LoginRequest loginRequest) {
-      Optional<User> currentUser = userRepository.findUserByUsername(loginRequest.getName());
+        Optional<User> currentUser = userRepository.findUserByUsername(loginRequest.getName());
 
-      if(currentUser.isEmpty()){
-          log.error("User not found!");
-          return Optional.empty();
-      }
+        if (currentUser.isEmpty()) {
+            log.error("User not found!");
+            return Optional.empty();
+        }
 
-        BCrypt.Result result = BCrypt.verifyer().verify(loginRequest.getPassword().toCharArray(), currentUser.get().getPassword());
-
-      if(!result.verified){
-          log.error("Wrong password!");
-          return Optional.empty();
-      }
-
+        if (!validBCryptPassword(loginRequest.getPassword(), currentUser.get().getPassword())) {
+            log.error("Wrong password!");
+            return Optional.empty();
+        }
 
         String token = jwtService.generateJwtToken(loginRequest.getName());
 
-
         return Optional.of(JwtResponse.builder().token(token).build());
     }
+
+    @Override
+    public boolean isValid(String authHeader) {
+        String jwt = authHeader.substring(7);
+        String username = jwtService.getUserNameFromJwtToken(jwt);
+
+        return !username.isEmpty() || userRepository.existsByUsername(username);
+
+
+    }
+
+    private boolean validBCryptPassword(String inComingPassword, String password) {
+        BCrypt.Result result = BCrypt.verifyer().verify(inComingPassword.toCharArray(), password);
+        return result.verified;
+    }
+
 }
